@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Hybrid Shader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: white;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+        
+        .controls {
+            background: #16213e;
+            padding: 25px;
+            border-radius: 15px;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .control-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #0f3460;
+            border-radius: 10px;
+        }
+        
+        .control-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        
+        .file-input {
+            margin-bottom: 15px;
+        }
+        
+        .file-input label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            color: #aaa;
+        }
+        
+        input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            background: #1a1a2e;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+        
+        .slider-control {
+            margin-bottom: 20px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+        
+        .slider-value {
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #1a1a2e;
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #667eea;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #667eea;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .effect-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .effect-btn {
+            padding: 10px;
+            background: #1a1a2e;
+            border: 2px solid #667eea;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.3s;
+        }
+        
+        .effect-btn:hover, .effect-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1em;
+            margin-top: 10px;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .canvas-wrapper {
+            position: relative;
+            background: #0f3460;
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 600px;
+        }
+        
+        canvas {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            cursor: crosshair;
+        }
+        
+        .info-box {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 0.9em;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+        
+        .status {
+            text-align: center;
+            padding: 15px;
+            background: #0f3460;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+        
+        .status.success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4caf50;
+        }
+        
+        .tip {
+            background: rgba(255, 193, 7, 0.1);
+            border-left: 3px solid #ffc107;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 Interactive Hybrid Image Shader</h1>
+            <p>Move your mouse to reveal the magic!</p>
+        </div>
+        
+        <div class="main-grid">
+            <div class="controls">
+                <div class="control-section">
+                    <h3>📁 Load Images</h3>
+                    <div class="file-input">
+                        <label>Low-Pass (Base)</label>
+                        <input type="file" id="lowImg" accept="image/*">
+                    </div>
+                    <div class="file-input">
+                        <label>High-Pass (Details)</label>
+                        <input type="file" id="highImg" accept="image/*">
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <h3>🎚️ Filter Settings</h3>
+                    <div class="slider-control">
+                        <div class="slider-label">
+                            <span>Sigma Low</span>
+                            <span class="slider-value" id="sigmaLowVal">30</span>
+                        </div>
+                        <input type="range" id="sigmaLow" min="5" max="50" value="30">
+                    </div>
+                    <div class="slider-control">
+                        <div class="slider-label">
+                            <span>Sigma High</span>
+                            <span class="slider-value" id="sigmaHighVal">15</span>
+                        </div>
+                        <input type="range" id="sigmaHigh" min="5" max="50" value="15">
+                    </div>
+                    <div class="slider-control">
+                        <div class="slider-label">
+                            <span>Alpha</span>
+                            <span class="slider-value" id="alphaVal">0.6</span>
+                        </div>
+                        <input type="range" id="alpha" min="0.1" max="2.0" value="0.6" step="0.1">
+                    </div>
+                    <div class="slider-control">
+                        <div class="slider-label">
+                            <span>High Boost</span>
+                            <span class="slider-value" id="boostVal">1.0</span>
+                        </div>
+                        <input type="range" id="highBoost" min="0.5" max="3.0" value="1.0" step="0.1">
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <h3>✨ Interaction Mode</h3>
+                    <div class="effect-buttons">
+                        <button class="effect-btn active" data-mode="spotlight">Spotlight</button>
+                        <button class="effect-btn" data-mode="reveal">Reveal</button>
+                        <button class="effect-btn" data-mode="split">Split</button>
+                        <button class="effect-btn" data-mode="blend">Blend</button>
+                        <button class="effect-btn" data-mode="ripple">Ripple</button>
+                        <button class="effect-btn" data-mode="zoom">Zoom</button>
+                    </div>
+                    <div class="tip">
+                        💡 Each mode reveals details differently!
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <h3>🎯 Effect Size</h3>
+                    <div class="slider-control">
+                        <div class="slider-label">
+                            <span>Radius</span>
+                            <span class="slider-value" id="radiusVal">150</span>
+                        </div>
+                        <input type="range" id="effectRadius" min="50" max="400" value="150">
+                    </div>
+                </div>
+                
+                <button onclick="processImages()">🔄 Generate Hybrid</button>
+                <button onclick="downloadCanvas()" style="background: #4caf50;">💾 Download</button>
+                
+                <div class="status" id="status">
+                    Load images and click Generate
+                </div>
+            </div>
+            
+            <div class="canvas-wrapper">
+                <canvas id="canvas"></canvas>
+                <div class="info-box" id="infoBox">
+                    Move mouse to interact ✨
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let lowImage = null;
+        let highImage = null;
+        let lowProcessed = null;
+        let highProcessed = null;
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let mouseX = 0;
+        let mouseY = 0;
+        let currentMode = 'spotlight';
+        let animationFrame = null;
+        
+        // Update sliders
+        ['sigmaLow', 'sigmaHigh', 'alpha', 'highBoost', 'effectRadius'].forEach(id => {
+            const slider = document.getElementById(id);
+            const display = document.getElementById(id + 'Val');
+            slider.addEventListener('input', (e) => {
+                display.textContent = e.target.value;
+            });
+        });
+        
+        // Mode selection
+        document.querySelectorAll('.effect-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.effect-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentMode = btn.dataset.mode;
+            });
+        });
+        
+        // Load images
+        document.getElementById('lowImg').addEventListener('change', (e) => {
+            loadImage(e.target.files[0], 'low');
+        });
+        
+        document.getElementById('highImg').addEventListener('change', (e) => {
+            loadImage(e.target.files[0], 'high');
+        });
+        
+        function loadImage(file, type) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    if (type === 'low') {
+                        lowImage = img;
+                    } else {
+                        highImage = img;
+                    }
+                    updateStatus(`${type === 'low' ? 'Low' : 'High'}-pass image loaded ✓`, 'success');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function updateStatus(msg, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = msg;
+            status.className = 'status ' + type;
+        }
+        
+        function processImages() {
+            if (!lowImage || !highImage) {
+                updateStatus('Please load both images first!');
+                return;
+            }
+            
+            updateStatus('Processing...', 'info');
+            
+            setTimeout(() => {
+                const w = Math.min(lowImage.width, highImage.width);
+                const h = Math.min(lowImage.height, highImage.height);
+                
+                canvas.width = w;
+                canvas.height = h;
+                
+                // Process low-pass
+                ctx.drawImage(lowImage, 0, 0, w, h);
+                const lowData = ctx.getImageData(0, 0, w, h);
+                lowProcessed = applyLowPass(lowData);
+                
+                // Process high-pass
+                ctx.drawImage(highImage, 0, 0, w, h);
+                const highData = ctx.getImageData(0, 0, w, h);
+                highProcessed = applyHighPass(highData);
+                
+                startInteraction();
+                updateStatus('Ready! Move your mouse ✨', 'success');
+            }, 100);
+        }
+        
+        function applyLowPass(imageData) {
+            const sigma = parseFloat(document.getElementById('sigmaLow').value);
+            const data = toGrayscale(imageData);
+            return gaussianBlur(data, imageData.width, imageData.height, sigma);
+        }
+        
+        function applyHighPass(imageData) {
+            const sigma = parseFloat(document.getElementById('sigmaHigh').value);
+            const data = toGrayscale(imageData);
+            const blurred = gaussianBlur(data, imageData.width, imageData.height, sigma);
+            const result = new Float32Array(data.length);
+            for (let i = 0; i < data.length; i++) {
+                result[i] = data[i] - blurred[i];
+            }
+            return result;
+        }
+        
+        function toGrayscale(imageData) {
+            const gray = new Float32Array(imageData.width * imageData.height);
+            for (let i = 0; i < gray.length; i++) {
+                const r = imageData.data[i * 4];
+                const g = imageData.data[i * 4 + 1];
+                const b = imageData.data[i * 4 + 2];
+                gray[i] = 0.299 * r + 0.587 * g + 0.114 * b;
+            }
+            return gray;
+        }
+        
+        function gaussianBlur(data, w, h, sigma) {
+            const kernel = createGaussianKernel(sigma);
+            const radius = Math.floor(kernel.length / 2);
+            const temp = new Float32Array(data.length);
+            const result = new Float32Array(data.length);
+            
+            // Horizontal
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    let sum = 0, weightSum = 0;
+                    for (let k = -radius; k <= radius; k++) {
+                        const xx = Math.max(0, Math.min(w - 1, x + k));
+                        sum += data[y * w + xx] * kernel[k + radius];
+                        weightSum += kernel[k + radius];
+                    }
+                    temp[y * w + x] = sum / weightSum;
+                }
+            }
+            
+            // Vertical
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    let sum = 0, weightSum = 0;
+                    for (let k = -radius; k <= radius; k++) {
+                        const yy = Math.max(0, Math.min(h - 1, y + k));
+                        sum += temp[yy * w + x] * kernel[k + radius];
+                        weightSum += kernel[k + radius];
+                    }
+                    result[y * w + x] = sum / weightSum;
+                }
+            }
+            
+            return result;
+        }
+        
+        function createGaussianKernel(sigma) {
+            const radius = Math.ceil(sigma * 3);
+            const size = radius * 2 + 1;
+            const kernel = new Float32Array(size);
+            for (let i = 0; i < size; i++) {
+                const x = i - radius;
+                kernel[i] = Math.exp(-(x * x) / (2 * sigma * sigma));
+            }
+            return kernel;
+        }
+        
+        function startInteraction() {
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
+                mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
+            });
+            
+            canvas.addEventListener('mouseleave', () => {
+                mouseX = -1000;
+                mouseY = -1000;
+            });
+            
+            animate();
+        }
+        
+        function animate() {
+            if (!lowProcessed || !highProcessed) return;
+            
+            const w = canvas.width;
+            const h = canvas.height;
+            const alpha = parseFloat(document.getElementById('alpha').value);
+            const boost = parseFloat(document.getElementById('highBoost').value);
+            const radius = parseFloat(document.getElementById('effectRadius').value);
+            
+            const imageData = ctx.createImageData(w, h);
+            const data = imageData.data;
+            
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const i = y * w + x;
+                    const dx = x - mouseX;
+                    const dy = y - mouseY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    let mixFactor = 0;
+                    
+                    switch(currentMode) {
+                        case 'spotlight':
+                            mixFactor = dist < radius ? 1 - (dist / radius) : 0;
+                            break;
+                        case 'reveal':
+                            mixFactor = dist < radius ? 1 : 0;
+                            break;
+                        case 'split':
+                            mixFactor = x < mouseX ? 1 : 0;
+                            break;
+                        case 'blend':
+                            const maxDist = Math.sqrt(w*w + h*h);
+                            mixFactor = 1 - Math.min(dist / maxDist, 1);
+                            break;
+                        case 'ripple':
+                            const wave = Math.sin(dist / 30 - Date.now() / 500);
+                            mixFactor = dist < radius ? (wave + 1) / 2 : 0;
+                            break;
+                        case 'zoom':
+                            const zoomFactor = dist < radius ? 2 - (dist / radius) : 1;
+                            mixFactor = dist < radius ? 1 : 0;
+                            break;
+                    }
+                    
+                    const lowVal = lowProcessed[i];
+                    const highVal = highProcessed[i] * boost;
+                    const hybrid = lowVal + alpha * highVal;
+                    const displayed = hybrid * mixFactor + lowVal * (1 - mixFactor);
+                    
+                    const val = Math.max(0, Math.min(255, displayed));
+                    data[i * 4] = val;
+                    data[i * 4 + 1] = val;
+                    data[i * 4 + 2] = val;
+                    data[i * 4 + 3] = 255;
+                }
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+            animationFrame = requestAnimationFrame(animate);
+        }
+        
+        function downloadCanvas() {
+            const link = document.createElement('a');
+            link.download = 'hybrid_interactive.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+    </script>
+</body>
+</html>
